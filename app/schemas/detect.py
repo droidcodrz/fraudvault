@@ -12,6 +12,8 @@ class ScoreBreakdown(BaseModel):
     clone_detection: float | None = None
     metadata: float | None = None
     ai_generated: float | None = None
+    synthetic: float | None = None
+    provenance: float | None = None
     font_consistency: float | None = None
     ocr_diff: float | None = None
 

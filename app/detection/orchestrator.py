@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from app.config import get_settings
 from app.detection.document import font_check, metadata_check, ocr_diff, page_ela
-from app.detection.image import ai_detector, clone, ela, heatmap, metadata, synthetic
+from app.detection.image import ai_detector, clone, ela, heatmap, metadata, provenance, synthetic
 
 _executor = ThreadPoolExecutor(max_workers=4)
 
@@ -57,10 +57,11 @@ def _compute_verdict(scores: dict, is_image: bool, thresholds: dict | None = Non
     meta = scores.get("metadata", 0.0) or 0.0
     ai = scores.get("ai_generated", 0.0) or 0.0
     synth = scores.get("synthetic", 0.0) or 0.0
+    prov = scores.get("provenance", 0.0) or 0.0
     font = scores.get("font_consistency", 0.0) or 0.0
     ocr = scores.get("ocr_diff", 0.0) or 0.0
 
-    effective_ai = max(ai, synth)
+    effective_ai = max(ai, synth, prov)
 
     forensic_scores = [ela, clone_s, meta]
     forensic_highest = max(forensic_scores)
@@ -90,6 +91,10 @@ def _compute_verdict(scores: dict, is_image: bool, thresholds: dict | None = Non
         + font * 0.05
         + ocr * 0.05
     )
+    # Definitive provenance (generator named itself in metadata) overrides
+    # the weighted blend — the file declares its own origin.
+    if prov >= 0.9:
+        confidence = max(confidence, prov)
     risk_score = int(confidence * 100)
 
     return verdict, confidence, risk_score
@@ -98,11 +103,12 @@ def _compute_verdict(scores: dict, is_image: bool, thresholds: dict | None = Non
 async def detect_image(file_bytes: bytes, ai_models=None) -> dict:
     start = time.perf_counter()
 
-    ela_result, clone_result, meta_result, synth_result = await asyncio.gather(
+    ela_result, clone_result, meta_result, synth_result, prov_result = await asyncio.gather(
         _run_in_executor(ela.analyse, file_bytes),
         _run_in_executor(clone.analyse, file_bytes),
         _run_in_executor(metadata.analyse, file_bytes),
         _run_in_executor(synthetic.analyse, file_bytes),
+        _run_in_executor(provenance.analyse, file_bytes),
     )
 
     ai_result = await _run_in_executor(ai_detector.analyse, file_bytes, ai_models)
@@ -110,7 +116,8 @@ async def detect_image(file_bytes: bytes, ai_models=None) -> dict:
 
     ai_score = ai_result["ai_gen_score"]
     synth_score = synth_result["synthetic_score"]
-    effective_ai = max(ai_score, synth_score)
+    prov_score = prov_result["provenance_score"]
+    effective_ai = max(ai_score, synth_score, prov_score)
 
     scores = {
         "ela": ela_result["ela_score"],
@@ -118,6 +125,7 @@ async def detect_image(file_bytes: bytes, ai_models=None) -> dict:
         "metadata": meta_result["metadata_score"],
         "ai_generated": ai_score,
         "synthetic": synth_score,
+        "provenance": prov_score,
         "effective_ai": effective_ai,
         "model_used": ai_result.get("model_used"),
         "font_consistency": None,
@@ -145,6 +153,7 @@ async def detect_image(file_bytes: bytes, ai_models=None) -> dict:
         ],
         meta_result.get("metadata_flags", []),
         synth_result.get("synthetic_flags", []),
+        prov_result.get("provenance_flags", []),
         ai_flags,
         [{"type": "model_unavailable", "severity": "low"}] if ai_result.get("model_unavailable") else [],
     )
@@ -165,6 +174,7 @@ async def detect_image(file_bytes: bytes, ai_models=None) -> dict:
             "clone": clone_result,
             "metadata": meta_result,
             "synthetic": synth_result,
+            "provenance": prov_result,
             "ai": ai_result,
         },
         "ela_score": ela_result["ela_score"],

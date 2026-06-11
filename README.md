@@ -98,13 +98,25 @@ Thresholds are configurable via `.env` (defaults shown):
 | `FORENSIC_TAMPERED_THRESHOLD` | 0.75 | Forensic score above → `tampered` |
 | `FORENSIC_INCONCLUSIVE_THRESHOLD` | 0.55 | Highest forensic score → `inconclusive` |
 
-`effective_ai = max(ai_generated, synthetic)` — synthetic heuristics (PNG/no-EXIF, AI dimensions, smoothness) boost detection of ChatGPT/DALL-E images even when ML models are unavailable.
+`effective_ai = max(ai_generated, synthetic, provenance)` — synthetic heuristics (PNG/no-EXIF, AI dimensions, smoothness) boost detection of ChatGPT/DALL-E images even when ML models are unavailable.
+
+### Provenance detection (no ML required)
+
+The provenance module (`app/detection/image/provenance.py`) reads metadata that AI generators embed in their own output:
+
+- **PNG text chunks** — Stable Diffusion WebUI writes the full prompt into a `parameters` chunk; ComfyUI writes `prompt`/`workflow` JSON; NovelAI sets `Software`.
+- **EXIF Software/Make/Model** — generator names (Midjourney, DALL-E, Firefly, …).
+- **XMP DigitalSourceType** — `trainedAlgorithmicMedia` declarations (IPTC standard).
+- **C2PA / Content Credentials** — JUMBF manifest markers (DALL-E 3, ChatGPT, Adobe Firefly). A C2PA manifest alone is *not* proof of AI generation (cameras and editors also embed it), so it scores 0.30 unless an algorithmic-media declaration is present.
+
+A definitive provenance hit (score 0.95) drives the verdict to `ai_generated` regardless of other scores — the file declared its own origin. Note: provenance only proves presence, never absence; stripped metadata returns 0.0 and the verdict falls back to heuristics/forensics.
 
 ### Interpreting results
 
 - **`confidence`** and **`risk_score`** measure **suspicion level** (higher = more suspicious), not confidence that a file is authentic.
 - **`scores.ai_generated`** — ML ensemble score (max across loaded HuggingFace models).
 - **`scores.synthetic`** — heuristic score for generator-like patterns.
+- **`scores.provenance`** — embedded-metadata provenance score (0.95 = generator named itself, 0.30 = C2PA manifest present, 0.0 = no provenance found).
 - **`scores.effective_ai`** — combined AI signal used for verdict.
 - **`scores.model_used`** — e.g. `ensemble:Organika/sdxl-detector,...` or `null` if models not loaded.
 
