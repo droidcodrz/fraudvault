@@ -144,7 +144,7 @@ async def test_detect_image_pipeline_flags_sd_png():
     from app.detection.orchestrator import detect_image
 
     file_bytes = _png_bytes({"parameters": "portrait photo, Steps: 30, Sampler: DPM++ 2M"})
-    result = await detect_image(file_bytes, ai_models=None)
+    result = await detect_image(file_bytes)
 
     assert result["verdict"] == "ai_generated"
     assert result["scores"]["provenance"] >= 0.9

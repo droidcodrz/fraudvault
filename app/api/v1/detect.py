@@ -94,9 +94,8 @@ async def detect_file(
             },
         )
 
-    ai_models = getattr(request.app.state, "ai_models", None) or getattr(request.app.state, "ai_model", None)
     try:
-        detection_output = await detect(content, content_type, file.filename or "upload", ai_models)
+        detection_output = await detect(content, content_type, file.filename or "upload")
     except UnsupportedFileTypeError as e:
         raise AppError("INVALID_FILE_TYPE", str(e), 400) from e
 

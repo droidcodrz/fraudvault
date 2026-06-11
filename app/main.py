@@ -13,7 +13,6 @@ except ImportError:
 
 from app.api.v1.router import router as v1_router
 from app.config import get_settings
-from app.detection.image.ai_detector import load_models
 from app.exceptions import AppError, app_error_handler, http_exception_handler
 from app.middleware.api_key_auth import APIKeyAuthMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
@@ -24,19 +23,6 @@ logger = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("loading_ai_models", cache_dir=settings.model_cache_dir)
-    app.state.ai_models = load_models(settings.model_cache_dir)
-    app.state.ai_model = app.state.ai_models  # backward compatibility
-
-    if app.state.ai_models:
-        logger.info(
-            "ai_models_ready",
-            count=len(app.state.ai_models),
-            models=[m.model_name for m in app.state.ai_models],
-        )
-    else:
-        logger.warning("ai_models_unavailable", msg="AI detection will use synthetic heuristics only")
-
     logger.info(
         "detection_thresholds",
         ai_generated=settings.ai_generated_threshold,
@@ -46,8 +32,6 @@ async def lifespan(app: FastAPI):
     )
 
     yield
-    app.state.ai_models = None
-    app.state.ai_model = None
     logger.info("shutdown_complete")
 
 

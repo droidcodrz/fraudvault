@@ -8,7 +8,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.database import sync_session_factory
-from app.detection.image.ai_detector import load_models
 from app.detection.orchestrator import detect
 from app.config import get_settings
 from app.models.detection_job import DetectionJob, JobStatus
@@ -18,15 +17,6 @@ from app.workers.celery_app import celery_app
 
 logger = structlog.get_logger()
 settings = get_settings()
-
-_ai_models = None
-
-
-def _get_ai_models():
-    global _ai_models
-    if _ai_models is None:
-        _ai_models = load_models(settings.model_cache_dir)
-    return _ai_models
 
 
 def _mime_for_file_type(file_type: str) -> str:
@@ -55,8 +45,7 @@ def process_detection_job(self, job_id: str):
 
         file_bytes = asyncio.run(storage_service.download_file(job.storage_key))
         mime = _mime_for_file_type(job.file_type.value)
-        ai_models = _get_ai_models()
-        detection_output = asyncio.run(detect(file_bytes, mime, job.file_name, ai_models))
+        detection_output = asyncio.run(detect(file_bytes, mime, job.file_name))
 
         heatmap_key = None
         if detection_output.get("heatmap_bytes"):

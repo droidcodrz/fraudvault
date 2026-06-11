@@ -64,10 +64,10 @@ def build_detect_response(job: DetectionJob, result: DetectionResult | None, det
 
     raw = result.raw_output or {}
     synthetic_score = raw.get("synthetic", {}).get("synthetic_score")
-    ai_raw = raw.get("ai", {})
+    provenance_score = raw.get("provenance", {}).get("provenance_score")
     effective_ai = None
-    if result.ai_gen_score is not None or synthetic_score is not None:
-        effective_ai = max(result.ai_gen_score or 0.0, synthetic_score or 0.0)
+    if synthetic_score is not None or provenance_score is not None:
+        effective_ai = max(synthetic_score or 0.0, provenance_score or 0.0)
 
     return {
         "job_id": str(job.id),
@@ -80,10 +80,10 @@ def build_detect_response(job: DetectionJob, result: DetectionResult | None, det
             "ela": result.ela_score,
             "clone_detection": result.clone_score,
             "metadata": result.metadata_score,
-            "ai_generated": result.ai_gen_score,
+            "ai_generated": None,
             "synthetic": synthetic_score,
+            "provenance": provenance_score,
             "effective_ai": effective_ai if effective_ai else None,
-            "model_used": ai_raw.get("model_used"),
             "font_consistency": result.font_score,
             "ocr_diff": result.ocr_diff_score,
         },

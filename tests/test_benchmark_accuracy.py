@@ -47,7 +47,7 @@ async def test_benchmark_accuracy():
 
         file_bytes = file_path.read_bytes()
         mime = _mime_for_entry(entry, file_path)
-        output = await detect(file_bytes, mime, file_path.name, ai_models=None)
+        output = await detect(file_bytes, mime, file_path.name)
 
         expected = entry["expected_verdict"]
         actual = output["verdict"]

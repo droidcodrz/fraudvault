@@ -34,8 +34,6 @@ class Settings(BaseSettings):
     r2_endpoint_url: str = ""
 
     local_storage_dir: str = "./storage"
-    model_cache_dir: str = "./models"
-    huggingface_hub_token: str = ""
 
     internal_service_key: str = "change_me"
     max_file_size_mb: int = 50

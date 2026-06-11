@@ -1,6 +1,6 @@
 # FraudVault
 
-Document and image forgery detection platform. FraudVault provides a REST API for detecting tampered images and PDFs using forensic analysis techniques including Error Level Analysis (ELA), clone detection, EXIF metadata analysis, AI-generated image detection, font consistency checks, and OCR text diffing.
+Document and image forgery detection platform. FraudVault provides a REST API for detecting tampered images and PDFs using forensic analysis techniques including Error Level Analysis (ELA), clone detection, EXIF metadata analysis, AI-provenance metadata detection, font consistency checks, and OCR text diffing. The engine is fully deterministic — no ML models, no GPU, no external AI services.
 
 ## Architecture
 
@@ -21,7 +21,7 @@ Client (JWT / API Key)
 
 ## Prerequisites
 
-- Python 3.11 (recommended; 3.12 supported; avoid 3.14 — several ML/PDF deps lack wheels)
+- Python 3.11 (recommended; 3.12 supported; avoid 3.14 — several imaging/PDF deps lack wheels)
 - PostgreSQL 14+
 - Redis 6+
 - Tesseract OCR (`brew install tesseract` on macOS)
@@ -98,7 +98,7 @@ Thresholds are configurable via `.env` (defaults shown):
 | `FORENSIC_TAMPERED_THRESHOLD` | 0.75 | Forensic score above → `tampered` |
 | `FORENSIC_INCONCLUSIVE_THRESHOLD` | 0.55 | Highest forensic score → `inconclusive` |
 
-`effective_ai = max(ai_generated, synthetic, provenance)` — synthetic heuristics (PNG/no-EXIF, AI dimensions, smoothness) boost detection of ChatGPT/DALL-E images even when ML models are unavailable.
+`effective_ai = max(synthetic, provenance)` — synthetic heuristics (PNG/no-EXIF, AI dimensions, smoothness) and embedded provenance metadata detect ChatGPT/DALL-E/Stable Diffusion images without any ML models.
 
 ### Provenance detection (no ML required)
 
@@ -114,11 +114,10 @@ A definitive provenance hit (score 0.95) drives the verdict to `ai_generated` re
 ### Interpreting results
 
 - **`confidence`** and **`risk_score`** measure **suspicion level** (higher = more suspicious), not confidence that a file is authentic.
-- **`scores.ai_generated`** — ML ensemble score (max across loaded HuggingFace models).
 - **`scores.synthetic`** — heuristic score for generator-like patterns.
 - **`scores.provenance`** — embedded-metadata provenance score (0.95 = generator named itself, 0.30 = C2PA manifest present, 0.0 = no provenance found).
-- **`scores.effective_ai`** — combined AI signal used for verdict.
-- **`scores.model_used`** — e.g. `ensemble:Organika/sdxl-detector,...` or `null` if models not loaded.
+- **`scores.effective_ai`** — combined AI-generation signal used for verdict (`max(synthetic, provenance)`).
+- **`scores.ai_generated`** — always `null`; reserved field from the removed ML ensemble, kept for API compatibility.
 
 ## Postman Collection
 
