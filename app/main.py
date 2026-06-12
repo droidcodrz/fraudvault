@@ -1,8 +1,11 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import structlog
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 try:
     from pillow_heif import register_heif_opener
@@ -54,6 +57,13 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health():
         return {"status": "ok"}
+
+    frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+    app.mount("/static", StaticFiles(directory=str(frontend_dir)), name="static")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        return FileResponse(str(frontend_dir / "index.html"))
 
     return app
 

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FraudVault</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div id="app">
+    <nav id="sidebar" class="sidebar hidden">
+      <div class="sidebar-brand">
+        <div class="brand-icon">FV</div>
+        <span>FraudVault</span>
+      </div>
+      <div class="sidebar-nav">
+        <a href="#/dashboard" class="nav-item" data-page="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a href="#/detect" class="nav-item" data-page="detect">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Detect
+        </a>
+        <a href="#/history" class="nav-item" data-page="history">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          History
+        </a>
+        <a href="#/keys" class="nav-item" data-page="keys">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          API Keys
+        </a>
+        <a href="#/usage" class="nav-item" data-page="usage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          Usage
+        </a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div class="user-details">
+            <span id="user-name">User</span>
+            <span id="user-plan" class="plan-badge">free</span>
+          </div>
+        </div>
+        <button class="btn-logout" id="btn-logout">Sign Out</button>
+      </div>
+    </nav>
+
+    <main id="main-content" class="main-content">
+      <div id="page-content"></div>
+    </main>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/dashboard.js"></script>
+  <script src="/static/js/detect.js"></script>
+  <script src="/static/js/history.js"></script>
+  <script src="/static/js/keys.js"></script>
+  <script src="/static/js/usage.js"></script>
+  <script src="/static/js/result.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
