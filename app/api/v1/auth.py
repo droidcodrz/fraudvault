@@ -17,7 +17,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     return LoginResponse(
         access_token=access,
         refresh_token=refresh,
-        user=UserResponse(id=str(user.id), email=user.email, full_name=user.full_name, plan=user.plan.value),
+        user=UserResponse(id=str(user.id), email=user.email, full_name=user.full_name, plan=user.plan.value, role=user.role.value, email_verified=user.email_verified),
     )
 
 
@@ -34,7 +34,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     return LoginResponse(
         access_token=access,
         refresh_token=refresh,
-        user=UserResponse(id=str(user.id), email=user.email, full_name=user.full_name, plan=user.plan.value),
+        user=UserResponse(id=str(user.id), email=user.email, full_name=user.full_name, plan=user.plan.value, role=user.role.value, email_verified=user.email_verified),
     )
 
 
@@ -52,5 +52,5 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
     return TokenPair(
         access_token=access,
         refresh_token=body.refresh_token,
-        user=UserResponse(id=str(user.id), email=user.email, full_name=user.full_name, plan=user.plan.value),
+        user=UserResponse(id=str(user.id), email=user.email, full_name=user.full_name, plan=user.plan.value, role=user.role.value, email_verified=user.email_verified),
     )

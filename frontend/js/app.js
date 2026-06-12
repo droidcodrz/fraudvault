@@ -12,13 +12,11 @@ const App = {
     const main = document.getElementById('main-content');
     const content = document.getElementById('page-content');
 
-    // Not logged in
     if (!token && !hash.startsWith('#/login')) {
       window.location.hash = '#/login';
       return;
     }
 
-    // Logged in, show sidebar
     if (token) {
       if (hash === '#/login') {
         window.location.hash = '#/dashboard';
@@ -32,13 +30,11 @@ const App = {
       main.classList.remove('with-sidebar');
     }
 
-    // Highlight active nav
     document.querySelectorAll('.nav-item').forEach(n => {
       const page = n.dataset.page;
       n.classList.toggle('active', hash.startsWith('#/' + page));
     });
 
-    // Route
     const [path, param] = this.parsePath(hash);
 
     switch (path) {
@@ -70,6 +66,18 @@ const App = {
         content.innerHTML = renderUsage();
         initUsage();
         break;
+      case 'org':
+        content.innerHTML = renderOrg();
+        initOrg();
+        break;
+      case 'plans':
+        content.innerHTML = renderPlans();
+        initPlans();
+        break;
+      case 'admin':
+        content.innerHTML = renderAdmin();
+        initAdmin();
+        break;
       default:
         window.location.hash = token ? '#/dashboard' : '#/login';
     }
@@ -87,6 +95,12 @@ const App = {
       document.getElementById('user-name').textContent = name;
       document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
       document.getElementById('user-plan').textContent = user.plan || 'free';
+
+      const adminNav = document.getElementById('admin-nav-item');
+      const adminSep = document.getElementById('admin-nav-sep');
+      const isAdmin = user.role === 'admin';
+      if (adminNav) adminNav.style.display = isAdmin ? '' : 'none';
+      if (adminSep) adminSep.style.display = isAdmin ? '' : 'none';
     } catch {}
   },
 

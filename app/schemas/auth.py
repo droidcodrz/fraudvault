@@ -21,6 +21,8 @@ class UserResponse(BaseModel):
     email: str
     full_name: str | None
     plan: str
+    role: str = "user"
+    email_verified: bool = False
 
     model_config = {"from_attributes": True}
 
