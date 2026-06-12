@@ -24,15 +24,18 @@ async def list_results(
     """List all detection jobs for the current user."""
     offset = (page - 1) * per_page
 
-    count_q = select(func.count()).select_from(DetectionJob).where(
-        DetectionJob.user_id == auth.user.id
-    )
+    if auth.user.current_org_id:
+        scope_filter = DetectionJob.org_id == auth.user.current_org_id
+    else:
+        scope_filter = DetectionJob.user_id == auth.user.id
+
+    count_q = select(func.count()).select_from(DetectionJob).where(scope_filter)
     total = (await db.execute(count_q)).scalar() or 0
 
     q = (
         select(DetectionJob)
         .options(selectinload(DetectionJob.result))
-        .where(DetectionJob.user_id == auth.user.id)
+        .where(scope_filter)
         .order_by(DetectionJob.queued_at.desc())
         .offset(offset)
         .limit(per_page)
@@ -69,10 +72,15 @@ async def get_result(
     result = await db.execute(
         select(DetectionJob)
         .options(selectinload(DetectionJob.result))
-        .where(DetectionJob.id == job_id, DetectionJob.user_id == auth.user.id)
+        .where(DetectionJob.id == job_id)
     )
     job = result.scalar_one_or_none()
     if not job:
+        raise AppError("NOT_FOUND", "Job not found", 404)
+
+    is_owner = job.user_id == auth.user.id
+    is_org_member = auth.user.current_org_id and job.org_id == auth.user.current_org_id
+    if not is_owner and not is_org_member:
         raise AppError("NOT_FOUND", "Job not found", 404)
 
     if job.status.value == "failed":

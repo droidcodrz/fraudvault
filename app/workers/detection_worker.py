@@ -2,7 +2,6 @@ import asyncio
 import uuid
 from datetime import datetime, timezone
 
-import httpx
 import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -13,6 +12,7 @@ from app.config import get_settings
 from app.models.detection_job import DetectionJob, JobStatus
 from app.models.detection_result import DetectionResult, Verdict
 from app.services import storage_service
+from app.services.webhook_service import deliver_webhook_sync
 from app.workers.celery_app import celery_app
 
 logger = structlog.get_logger()
@@ -88,22 +88,15 @@ def process_detection_job(self, job_id: str):
         )
 
         if job.webhook_url:
-            response_payload = {
+            webhook_payload = {
                 "job_id": str(job.id),
                 "status": "completed",
                 "verdict": detection_output["verdict"],
                 "confidence": detection_output["confidence"],
                 "risk_score": detection_output["risk_score"],
-                "flags": detection_output.get("flags", []),
-                "scores": detection_output.get("scores", {}),
-                "heatmap_url": heatmap_url,
                 "file_name": job.file_name,
-                "file_type": job.file_type.value,
             }
-            try:
-                httpx.post(job.webhook_url, json=response_payload, timeout=10)
-            except Exception:
-                pass
+            deliver_webhook_sync(job.webhook_url, webhook_payload)
 
         return {"job_id": job_id, "status": "completed"}
 

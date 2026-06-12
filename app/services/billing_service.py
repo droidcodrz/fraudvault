@@ -47,7 +47,7 @@ async def check_quota(db: AsyncSession, user: User) -> bool:
     if limit is None:
         return True
     hits = await get_user_monthly_hits(db, user.id)
-    if user.plan == UserPlan.free and hits >= limit:
+    if hits >= limit:
         return False
     return True
 

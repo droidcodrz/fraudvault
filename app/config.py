@@ -35,6 +35,16 @@ class Settings(BaseSettings):
 
     local_storage_dir: str = "./storage"
 
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = "noreply@fraudvault.io"
+    smtp_from_name: str = "FraudVault"
+    app_url: str = "http://localhost:8000"
+
+    cors_origins: str = "*"
+
     internal_service_key: str = "change_me"
     max_file_size_mb: int = 50
 

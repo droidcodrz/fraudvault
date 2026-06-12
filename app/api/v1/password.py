@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.services import password_service
+from app.services.email_service import send_password_reset_email, send_verification_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -31,10 +33,12 @@ async def forgot_password(
     reset = await password_service.create_password_reset(db, body.email)
     await db.commit()
     if reset:
-        return {
-            "message": "If an account exists with that email, a reset link has been generated.",
-            "token": reset.token,
-        }
+        await send_password_reset_email(body.email, reset.token)
+        settings = get_settings()
+        response = {"message": "If an account exists with that email, a reset link has been generated."}
+        if not settings.smtp_host:
+            response["token"] = reset.token
+        return response
     return {"message": "If an account exists with that email, a reset link has been generated."}
 
 
@@ -67,4 +71,9 @@ async def send_verification(
         return {"message": "Email is already verified."}
     verification = await password_service.create_email_verification(db, user.id)
     await db.commit()
-    return {"message": "Verification email sent.", "token": verification.token}
+    await send_verification_email(user.email, verification.token)
+    settings = get_settings()
+    response = {"message": "Verification email sent."}
+    if not settings.smtp_host:
+        response["token"] = verification.token
+    return response

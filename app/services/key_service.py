@@ -27,10 +27,12 @@ async def create_api_key(
     user_id: uuid.UUID,
     name: str | None,
     environment: KeyEnvironment = KeyEnvironment.live,
+    org_id: uuid.UUID | None = None,
 ) -> tuple[APIKey, str]:
     raw_key, prefix, key_hash = generate_api_key(environment.value)
     api_key = APIKey(
         user_id=user_id,
+        org_id=org_id,
         key_prefix=prefix,
         key_hash=key_hash,
         name=name,
@@ -55,10 +57,12 @@ async def validate_api_key(db: AsyncSession, raw_key: str) -> APIKey | None:
     return api_key
 
 
-async def list_api_keys(db: AsyncSession, user_id: uuid.UUID) -> list[APIKey]:
-    result = await db.execute(
-        select(APIKey).where(APIKey.user_id == user_id, APIKey.is_active.is_(True))
-    )
+async def list_api_keys(db: AsyncSession, user_id: uuid.UUID, org_id: uuid.UUID | None = None) -> list[APIKey]:
+    if org_id:
+        q = select(APIKey).where(APIKey.org_id == org_id, APIKey.is_active.is_(True))
+    else:
+        q = select(APIKey).where(APIKey.user_id == user_id, APIKey.is_active.is_(True))
+    result = await db.execute(q)
     return list(result.scalars().all())
 
 

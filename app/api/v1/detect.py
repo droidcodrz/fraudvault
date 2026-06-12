@@ -11,10 +11,19 @@ from app.detection.orchestrator import UnsupportedFileTypeError, detect
 from app.exceptions import AppError
 from app.models.billing import HitType
 from app.models.detection_job import DetectionJob, FileType, JobStatus
+from app.models.user import UserPlan
 from app.services import billing_service, result_service, storage_service
 
 router = APIRouter(tags=["detect"])
 logger = structlog.get_logger()
+
+PLAN_FILE_SIZE_LIMITS = {
+    UserPlan.free: 10 * 1024 * 1024,
+    UserPlan.starter: 20 * 1024 * 1024,
+    UserPlan.growth: 50 * 1024 * 1024,
+    UserPlan.pro: 100 * 1024 * 1024,
+    UserPlan.enterprise: 200 * 1024 * 1024,
+}
 
 ALLOWED_TYPES = {
     "image/jpeg": (FileType.image, 20 * 1024 * 1024),
@@ -56,6 +65,10 @@ async def detect_file(
     if len(content) > max_size:
         raise AppError("FILE_TOO_LARGE", f"File exceeds maximum size of {max_size // (1024*1024)}MB", 400)
 
+    plan_limit = PLAN_FILE_SIZE_LIMITS.get(auth.user.plan, PLAN_FILE_SIZE_LIMITS[UserPlan.free])
+    if len(content) > plan_limit:
+        raise AppError("FILE_TOO_LARGE", f"File exceeds your plan limit of {plan_limit // (1024*1024)}MB", 400)
+
     if not await billing_service.check_quota(db, auth.user):
         raise AppError("QUOTA_EXCEEDED", "Monthly quota exceeded for your plan", 402)
 
@@ -66,6 +79,7 @@ async def detect_file(
     job = DetectionJob(
         id=job_id,
         user_id=auth.user.id,
+        org_id=auth.user.current_org_id,
         api_key_id=auth.api_key.id if auth.api_key else None,
         file_name=file.filename or "upload",
         file_type=file_type,
